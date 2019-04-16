@@ -300,10 +300,21 @@ class FedexConection {
         $r->setPackaging($packaging);
 
         // iso2_code
+        $r->setOrigName($request['origin_name']);
+        $r->setOrigPhone($request['origin_phone']);
+        $r->setOrigEmail($request['origin_email']);
+        $r->setOrigStreet($request['origin_street']);
+        $r->setOrigCity($request['origin_city']);
+        $r->setOrigStatecode($request['origin_state_code']);
         $r->setOrigCountry($request['origin_country']);
         $r->setOrigPostal($request['origin_postcode']);
 
         // iso2_code
+        $r->setDestName($request['dest_name']);
+        $r->setDestPhone($request['dest_phone']);
+        $r->setDestEmail($request['dest_email']);
+        $r->setDestStreet($request['dest_street']);
+        $r->setDestStatecode($request['dest_state_code']);
         $r->setDestCountry($request['dest_country']);
         $r->setDestPostal($request['dest_postcode']);
         $r->setDestCity($request['dest_city']);
@@ -320,6 +331,7 @@ class FedexConection {
         if (array_key_exists('smartpost_hubid',$request)) {
             $r->setHubid($request['smartpost_hubid']);
         }
+        $r->setCurrency($request['currency']);
 
         $this->setRawRequest($r);
 
@@ -333,26 +345,26 @@ class FedexConection {
     */
     protected function _getQuotes()
     {
-    $this->_result = new RateResult();
-    // make separate request for Smart Post method
-    $allowedMethods = $this->allowedMethods;
-    if (in_array(self::RATE_REQUEST_SMARTPOST, $allowedMethods)) {
-        $response = $this->_doRatesRequest(self::RATE_REQUEST_SMARTPOST);
-        $preparedSmartpost = $this->_prepareRateResponse($response);
-        if (!$preparedSmartpost->getError()) {
-            $this->_result->append($preparedSmartpost);
+        $this->_result = new RateResult();
+        // make separate request for Smart Post method
+        $allowedMethods = $this->allowedMethods;
+        if (in_array(self::RATE_REQUEST_SMARTPOST, $allowedMethods)) {
+            $response = $this->_doRatesRequest(self::RATE_REQUEST_SMARTPOST);
+            $preparedSmartpost = $this->_prepareRateResponse($response);
+            if (!$preparedSmartpost->getError()) {
+                $this->_result->append($preparedSmartpost);
+            }
         }
-    }
-    // make general request for all methods
-    $response = $this->_doRatesRequest(self::RATE_REQUEST_GENERAL);
-    $preparedGeneral = $this->_prepareRateResponse($response);
-    if (!$preparedGeneral->getError()
-        || $this->_result->getError() && $preparedGeneral->getError()
-        || empty($this->_result->getAllRates())
-    ) {
-        $this->_result->append($preparedGeneral);
-    }
-    return $this->_result;
+        // make general request for all methods
+        $response = $this->_doRatesRequest(self::RATE_REQUEST_GENERAL);
+        $preparedGeneral = $this->_prepareRateResponse($response);
+        if (!$preparedGeneral->getError()
+            || $this->_result->getError() && $preparedGeneral->getError()
+            || empty($this->_result->getAllRates())
+        ) {
+            $this->_result->append($preparedGeneral);
+        }
+        return $this->_result;
     }
 
     /**
@@ -401,10 +413,28 @@ class FedexConection {
                 'PackagingType' => $r->getPackaging(),
                 'TotalInsuredValue' => ['Amount' => $r->getValue(), 'Currency' => 'NMP'],
                 'Shipper' => [
-                    'Address' => ['PostalCode' => $r->getOrigPostal(), 'CountryCode' => $r->getOrigCountry()],
+                    'Contact' => [
+                        'PersonName' => $r->getOrigName(), 
+                        'PhoneNumber' => $r->getOrigPhone(),
+                        'EmailAddress' => $r->getOrigEmail()
+                    ],
+                    'Address' => [
+                        'StreetLines' => $r->getOrigStreet(),
+                        'City' => $r->getOrigCity(), 
+                        'StateOrProvinceCode' => $r->getOrigStatecode(), 
+                        'PostalCode' => $r->getOrigPostal(), 
+                        'CountryCode' => $r->getOrigCountry()
+                    ],
                 ],
                 'Recipient' => [
+                    'Contact' => [
+                        'PersonName' => $r->getDestName(), 
+                        'PhoneNumber' => $r->getDestPhone(),
+                        'EmailAddress' => $r->getDestEmail()
+                    ],
                     'Address' => [
+                        'StreetLines' => $r->getDestStreet(),
+                        'StateOrProvinceCode' => $r->getDestStatecode(),
                         'PostalCode' => $r->getDestPostal(),
                         'CountryCode' => $r->getDestCountry(),
                         'Residential' => false,
@@ -448,6 +478,7 @@ class FedexConection {
                 ];
             }
         }
+        die(print_r($ratesRequest,1));
         return $ratesRequest;
     }
 
